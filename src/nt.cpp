@@ -1,6 +1,7 @@
 #include "nt.hpp"
 
 #include <cstddef>
+#include <cstring>
 #include <limits>
 
 namespace nt {
@@ -112,9 +113,10 @@ namespace nt {
             return std::unexpected(last_error_code());
         }
 
-        auto nt_query_info = reinterpret_cast<NtQuerySystemInformationPtr>(
-            ::GetProcAddress(ntdll, "NtQuerySystemInformation")
-        );
+        FARPROC raw_proc = ::GetProcAddress(ntdll, "NtQuerySystemInformation");
+        NtQuerySystemInformationPtr nt_query_info = nullptr;
+        static_assert(sizeof(nt_query_info) == sizeof(raw_proc));
+        std::memcpy(&nt_query_info, &raw_proc, sizeof(nt_query_info));
 
         if (!nt_query_info) {
             return std::unexpected(std::make_error_code(std::errc::not_supported));
