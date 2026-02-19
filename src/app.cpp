@@ -2,6 +2,7 @@
 
 #include "cli_parser.hpp"
 #include "nt.hpp"
+#include "printer.hpp"
 #include "string_utils.hpp"
 
 #include <algorithm>
@@ -130,6 +131,8 @@ int HandleEnumApp::run(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    const std::size_t total_raw_count = handles_result->size();
+
     std::vector<nt::RawHandle> filtered_handles;
     filtered_handles.reserve(handles_result->size());
 
@@ -145,21 +148,6 @@ int HandleEnumApp::run(int argc, char* argv[]) {
         if (keep) {
             filtered_handles.push_back(handle);
         }
-    }
-
-    if (options.verbose) {
-        std::cout << "Verbose mode is ON\n";
-    }
-
-    if (options.pid) {
-        std::cout << std::format("Filtering by PID: {}\n", *options.pid);
-    }
-
-    std::cout << std::format("Retrieved {} system handles.\n", handles_result->size());
-
-    if (options.showCountOnly) {
-        std::cout << std::format("Matching handles: {}\n", filtered_handles.size());
-        return EXIT_SUCCESS;
     }
 
     std::vector<HandleInfo> mapped_handles;
@@ -188,16 +176,8 @@ int HandleEnumApp::run(int argc, char* argv[]) {
 
     sort_handles(mapped_handles, options.sortBy);
 
-    std::cout << std::format("{:<8} {:<15} {:<24} {}\n", "PID", "Process", "Type", "Name");
-    for (const HandleInfo& handle : mapped_handles) {
-        std::cout << std::format("{:<8} {:<15} {:<24} {}\n",
-                                 handle.pid,
-                                 handle.processName,
-                                 handle.handleType,
-                                 handle.objectName);
-    }
-
-    std::cout << std::format("Matching handles: {}\n", mapped_handles.size());
+    const HandlePrinter printer;
+    printer.print_results(mapped_handles, options, total_raw_count);
 
     return EXIT_SUCCESS;
 }
