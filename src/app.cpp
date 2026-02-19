@@ -15,25 +15,29 @@
 #include <unordered_set>
 #include <vector>
 
-HandleInfo HandleEnumApp::map_to_info(const nt::RawHandle& raw_handle) const {
+const std::string& HandleEnumApp::get_cached_process_name(const uint32_t pid) {
+    if (const auto cache_it = m_process_name_cache.find(pid); cache_it != m_process_name_cache.end()) {
+        return cache_it->second;
+    }
+
+    const auto [inserted_it, inserted] = m_process_name_cache.emplace(pid, nt::get_process_name_by_pid(pid));
+    (void)inserted;
+    return inserted_it->second;
+}
+
+HandleInfo HandleEnumApp::map_to_info(const nt::RawHandle& raw_handle) {
     const uint32_t pid = raw_handle.processId > static_cast<std::uintptr_t>(std::numeric_limits<uint32_t>::max())
         ? std::numeric_limits<uint32_t>::max()
         : static_cast<uint32_t>(raw_handle.processId);
 
-    std::string process_name = "N/A";
-    if (const auto cache_it = m_process_name_cache.find(pid); cache_it != m_process_name_cache.end()) {
-        process_name = cache_it->second;
-    } else {
-        process_name = nt::get_process_name_by_pid(pid);
-        m_process_name_cache.emplace(pid, process_name);
-    }
+    const std::string& process_name = get_cached_process_name(pid);
 
     const auto type_result = nt::query_object_type(raw_handle);
     const auto name_result = nt::query_object_name(raw_handle);
 
     return HandleInfo{
         .pid = pid,
-        .processName = std::move(process_name),
+        .processName = process_name,
         .handleType = type_result ? *type_result : "N/A",
         .objectName = name_result ? *name_result : "N/A",
         .grantedAccess = raw_handle.grantedAccess,
@@ -184,9 +188,9 @@ int HandleEnumApp::run(int argc, char* argv[]) {
 
     sort_handles(mapped_handles, options.sortBy);
 
-    std::cout << std::format("{:<8} {:<28} {:<24} {}\n", "PID", "Process", "Type", "Name");
+    std::cout << std::format("{:<8} {:<15} {:<24} {}\n", "PID", "Process", "Type", "Name");
     for (const HandleInfo& handle : mapped_handles) {
-        std::cout << std::format("{:<8} {:<28} {:<24} {}\n",
+        std::cout << std::format("{:<8} {:<15} {:<24} {}\n",
                                  handle.pid,
                                  handle.processName,
                                  handle.handleType,

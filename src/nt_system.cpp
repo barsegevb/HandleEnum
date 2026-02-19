@@ -187,16 +187,20 @@ std::expected<std::vector<RawHandle>, std::error_code> query_system_handles() {
 
 std::string get_process_name_by_pid(const uint32_t pid) noexcept {
     if (pid == 0) {
-        return "N/A";
+        return "Idle";
+    }
+
+    if (pid == 4) {
+        return "System";
     }
 
     HANDLE process_handle = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(pid));
     if (!process_handle) {
-        return "N/A";
+        return "Unknown";
     }
 
     std::vector<wchar_t> path_buffer(512, L'\0');
-    std::string process_name = "N/A";
+    std::string process_name = "Unknown";
 
     for (int attempt = 0; attempt < kMaxRetries; ++attempt) {
         DWORD size = static_cast<DWORD>(path_buffer.size());
@@ -205,7 +209,7 @@ std::string get_process_name_by_pid(const uint32_t pid) noexcept {
             const std::filesystem::path parsed_path(full_path);
             const std::wstring filename = parsed_path.filename().native();
             const std::string utf8_name = utils::utf16_to_utf8(filename);
-            process_name = utf8_name.empty() ? "N/A" : utf8_name;
+            process_name = utf8_name.empty() ? "Unknown" : utf8_name;
             break;
         }
 
