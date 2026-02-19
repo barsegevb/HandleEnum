@@ -155,6 +155,10 @@ std::expected<std::string, Error> query_object_name(const RawHandle&) noexcept {
     return std::unexpected(std::make_error_code(std::errc::not_supported));
 }
 
+std::string get_process_name_by_pid(const uint32_t pid) noexcept {
+    return std::to_string(pid) + ".exe";
+}
+
 } // namespace nt
 
 int main() {

@@ -1,8 +1,12 @@
 #include "nt.hpp"
+#include "string_utils.hpp"
 
 #include <cstddef>
 #include <cstring>
+#include <filesystem>
 #include <limits>
+#include <string>
+#include <vector>
 
 namespace nt {
 
@@ -179,6 +183,48 @@ std::expected<std::vector<RawHandle>, std::error_code> query_system_handles() {
     }
 
     return result;
+}
+
+std::string get_process_name_by_pid(const uint32_t pid) noexcept {
+    if (pid == 0) {
+        return "Idle";
+    }
+
+    if (pid == 4) {
+        return "System";
+    }
+
+    HANDLE process_handle = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(pid));
+    if (!process_handle) {
+        return "Unknown";
+    }
+
+    std::vector<wchar_t> path_buffer(512, L'\0');
+    std::string process_name = "Unknown";
+
+    for (int attempt = 0; attempt < kMaxRetries; ++attempt) {
+        DWORD size = static_cast<DWORD>(path_buffer.size());
+        if (::QueryFullProcessImageNameW(process_handle, 0, path_buffer.data(), &size)) {
+            const std::wstring full_path(path_buffer.data(), size);
+            const std::filesystem::path parsed_path(full_path);
+            const std::wstring filename = parsed_path.filename().native();
+            const std::string utf8_name = utils::utf16_to_utf8(filename);
+            process_name = utf8_name.empty() ? "Unknown" : utf8_name;
+            break;
+        }
+
+        if (::GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+            break;
+        }
+
+        if (path_buffer.size() > static_cast<std::size_t>(std::numeric_limits<DWORD>::max() / 2)) {
+            break;
+        }
+        path_buffer.resize(path_buffer.size() * 2, L'\0');
+    }
+
+    ::CloseHandle(process_handle);
+    return process_name;
 }
 
 } // namespace nt

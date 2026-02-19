@@ -60,4 +60,10 @@ namespace nt {
      */
     [[nodiscard]] std::expected<std::string, Error> query_object_name(const RawHandle& handle) noexcept;
 
+    /**
+     * @brief Best-effort process executable name lookup by pid.
+     * @return UTF-8 filename (e.g. chrome.exe) or "N/A" on failure.
+     */
+    [[nodiscard]] std::string get_process_name_by_pid(uint32_t pid) noexcept;
+
 } // namespace nt
