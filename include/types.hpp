@@ -24,3 +24,16 @@ struct CliOptions {
     // If true, print additional diagnostics/details.
     bool verbose = false;
 };
+
+// High-level enriched handle model used by app-level pipeline.
+struct HandleInfo {
+    uint32_t pid{};
+    std::string processName;
+    std::string handleType;
+    std::string objectName;
+    uint32_t grantedAccess{};
+    std::uintptr_t objectAddress{};
+    std::uintptr_t handleValue{};
+    uint16_t objectTypeIndex{};
+    uint32_t handleAttributes{};
+};

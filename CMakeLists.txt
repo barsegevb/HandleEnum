@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(HandleEnum
   src/app.cpp
+  src/filters.cpp
     src/main.cpp
     src/cli_parser.cpp
   src/nt.cpp
@@ -22,6 +23,7 @@ add_executable(cli_parser_tests
 add_executable(app_tests
   tests/app_tests.cpp
   src/app.cpp
+  src/filters.cpp
   src/cli_parser.cpp
 )
 
