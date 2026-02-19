@@ -103,8 +103,7 @@ void print_help() {
               << "  -s, --sort <Field>       Sort by: pid, type, name (default: pid)\n"
               << "  -c, --count              Show only count statistics\n"
               << "  -v, --verbose            Show detailed info\n"
-              << "  -h, --help               Display help message\n"
-              << std::endl;
+              << "  -h, --help               Display help message\n\n";
 }
 
 } // namespace cli
