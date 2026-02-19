@@ -45,7 +45,8 @@ HandleInfo HandleEnumApp::map_to_info(const nt::RawHandle& raw_handle) {
         if (raw_handle.grantedAccess == 0x0012019F || 
             raw_handle.grantedAccess == 0x001A019F ||
             raw_handle.grantedAccess == 0x00120189 ||
-            raw_handle.grantedAccess == 0x00100000) {
+            raw_handle.grantedAccess == 0x00100000 ||
+            raw_handle.grantedAccess == 0x001F0003) {
             is_risky_pipe = true;
         }
     }
@@ -54,7 +55,11 @@ HandleInfo HandleEnumApp::map_to_info(const nt::RawHandle& raw_handle) {
         object_name = "Locked (Anti-Deadlock)";
     } else {
         const auto name_result = nt::query_object_name(raw_handle);
-        object_name = name_result ? *name_result : "N/A";
+        if (!name_result) {
+            object_name = "N/A";
+        } else {
+            object_name = *name_result;
+        }
     }
 
     return HandleInfo{
