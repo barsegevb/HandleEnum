@@ -1,1 +1,0 @@
-/home/runner/work/HandleEnum/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/cli_parser_tests.dir/link.d CMakeFiles/cli_parser_tests.dir/tests/cli_parser_tests.cpp.o CMakeFiles/cli_parser_tests.dir/src/cli_parser.cpp.o -o cli_parser_tests
