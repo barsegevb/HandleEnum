@@ -5,12 +5,14 @@
 #include <cstdint>
 #include <vector>
 #include <expected>
+#include <string>
 #include <system_error>
 
 namespace nt {
 
     // Status codes for NT API.
     using NTSTATUS = LONG;
+    using Error = std::error_code;
     inline constexpr NTSTATUS STATUS_SUCCESS = 0x00000000;
     inline constexpr NTSTATUS STATUS_INFO_LENGTH_MISMATCH = static_cast<NTSTATUS>(0xC0000004u);
 
@@ -45,5 +47,17 @@ namespace nt {
         * @return std::expected<std::vector<RawHandle>, std::error_code> List of handles.
      */
     std::expected<std::vector<RawHandle>, std::error_code> query_system_handles();
+
+    /**
+     * @brief Best-effort object type query for a raw handle.
+     * @return std::expected<std::string, Error> Type name or error.
+     */
+    [[nodiscard]] std::expected<std::string, Error> query_object_type(const RawHandle& handle) noexcept;
+
+    /**
+     * @brief Best-effort object name query for a raw handle.
+     * @return std::expected<std::string, Error> Object name or error.
+     */
+    [[nodiscard]] std::expected<std::string, Error> query_object_name(const RawHandle& handle) noexcept;
 
 } // namespace nt

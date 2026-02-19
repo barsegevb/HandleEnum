@@ -147,6 +147,14 @@ std::expected<std::vector<RawHandle>, std::error_code> query_system_handles() {
     return handles;
 }
 
+std::expected<std::string, Error> query_object_type(const RawHandle&) noexcept {
+    return std::unexpected(std::make_error_code(std::errc::not_supported));
+}
+
+std::expected<std::string, Error> query_object_name(const RawHandle&) noexcept {
+    return std::unexpected(std::make_error_code(std::errc::not_supported));
+}
+
 } // namespace nt
 
 int main() {
