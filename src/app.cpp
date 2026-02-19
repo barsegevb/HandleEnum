@@ -12,6 +12,7 @@
 #include <memory>
 #include <ranges>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 HandleInfo HandleEnumApp::map_to_info(const nt::RawHandle& raw_handle) const {
@@ -19,12 +20,20 @@ HandleInfo HandleEnumApp::map_to_info(const nt::RawHandle& raw_handle) const {
         ? std::numeric_limits<uint32_t>::max()
         : static_cast<uint32_t>(raw_handle.processId);
 
+    std::string process_name = "N/A";
+    if (const auto cache_it = m_process_name_cache.find(pid); cache_it != m_process_name_cache.end()) {
+        process_name = cache_it->second;
+    } else {
+        process_name = nt::get_process_name_by_pid(pid);
+        m_process_name_cache.emplace(pid, process_name);
+    }
+
     const auto type_result = nt::query_object_type(raw_handle);
     const auto name_result = nt::query_object_name(raw_handle);
 
     return HandleInfo{
         .pid = pid,
-        .processName = "N/A",
+        .processName = std::move(process_name),
         .handleType = type_result ? *type_result : "N/A",
         .objectName = name_result ? *name_result : "N/A",
         .grantedAccess = raw_handle.grantedAccess,
@@ -152,16 +161,34 @@ int HandleEnumApp::run(int argc, char* argv[]) {
     std::vector<HandleInfo> mapped_handles;
     mapped_handles.reserve(filtered_handles.size());
 
+    m_process_name_cache.clear();
+    m_process_name_cache.reserve(filtered_handles.size());
+
+    std::unordered_set<uint32_t> unique_pids;
+    unique_pids.reserve(filtered_handles.size());
+
+    for (const nt::RawHandle& raw_handle : filtered_handles) {
+        const uint32_t pid = raw_handle.processId > static_cast<std::uintptr_t>(std::numeric_limits<uint32_t>::max())
+            ? std::numeric_limits<uint32_t>::max()
+            : static_cast<uint32_t>(raw_handle.processId);
+        unique_pids.insert(pid);
+    }
+
+    for (const uint32_t pid : unique_pids) {
+        m_process_name_cache.emplace(pid, nt::get_process_name_by_pid(pid));
+    }
+
     for (const nt::RawHandle& raw_handle : filtered_handles) {
         mapped_handles.push_back(map_to_info(raw_handle));
     }
 
     sort_handles(mapped_handles, options.sortBy);
 
-    std::cout << std::format("{:<8} {:<24} {}\n", "PID", "Type", "Name");
+    std::cout << std::format("{:<8} {:<28} {:<24} {}\n", "PID", "Process", "Type", "Name");
     for (const HandleInfo& handle : mapped_handles) {
-        std::cout << std::format("{:<8} {:<24} {}\n",
+        std::cout << std::format("{:<8} {:<28} {:<24} {}\n",
                                  handle.pid,
+                                 handle.processName,
                                  handle.handleType,
                                  handle.objectName);
     }

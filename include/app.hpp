@@ -4,6 +4,8 @@
 #include "types.hpp"
 
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 class HandleEnumApp {
@@ -18,4 +20,5 @@ private:
     void build_filters(const Parser& parsed_args);
 
     std::vector<std::unique_ptr<IHandleFilter>> m_filters;
+    mutable std::unordered_map<uint32_t, std::string> m_process_name_cache;
 };
