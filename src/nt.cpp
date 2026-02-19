@@ -44,7 +44,11 @@ namespace nt {
         return std::make_error_code(std::errc::io_error);
     }
 
-    [[nodiscard]] std::size_t grow_buffer_size(std::size_t current, ULONG needed) {
+    } // namespace
+
+    namespace detail {
+
+    std::size_t grow_buffer_size(std::size_t current, ULONG needed) {
         std::size_t next = current * 2;
         const std::size_t needed_size = static_cast<std::size_t>(needed);
         if (needed_size > next) {
@@ -58,7 +62,7 @@ namespace nt {
         return next;
     }
 
-    [[nodiscard]] bool buffer_has_complete_payload(std::size_t buffer_size, std::size_t handle_count) {
+    bool buffer_has_complete_payload(std::size_t buffer_size, std::size_t handle_count) {
         if (buffer_size < offsetof(SYSTEM_HANDLE_INFORMATION_EX, Handles)) {
             return false;
         }
@@ -68,7 +72,7 @@ namespace nt {
         return handle_count <= max_entries;
     }
 
-    } // namespace
+    } // namespace detail
 
     std::expected<void, std::error_code> enable_debug_privilege() {
         HANDLE token_handle = nullptr;
@@ -142,7 +146,7 @@ namespace nt {
                 return std::unexpected(ntstatus_error(status));
             }
 
-            const std::size_t next = grow_buffer_size(buffer.size(), needed_size);
+            const std::size_t next = detail::grow_buffer_size(buffer.size(), needed_size);
             if (next <= buffer.size()) {
                 return std::unexpected(std::make_error_code(std::errc::value_too_large));
             }
@@ -156,7 +160,7 @@ namespace nt {
         auto* handle_info = reinterpret_cast<SYSTEM_HANDLE_INFORMATION_EX*>(buffer.data());
         const std::size_t handle_count = static_cast<std::size_t>(handle_info->NumberOfHandles);
 
-        if (!buffer_has_complete_payload(buffer.size(), handle_count)) {
+        if (!detail::buffer_has_complete_payload(buffer.size(), handle_count)) {
             return std::unexpected(std::make_error_code(std::errc::result_out_of_range));
         }
 

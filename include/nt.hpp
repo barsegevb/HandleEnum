@@ -28,6 +28,12 @@ namespace nt {
         std::uint32_t handleAttributes{};
     };
 
+    namespace detail {
+        // Internal helper exposed for deterministic unit testing.
+        std::size_t grow_buffer_size(std::size_t current, ULONG needed);
+        bool buffer_has_complete_payload(std::size_t buffer_size, std::size_t handle_count);
+    }
+
     /**
      * @brief Elevates the current process privileges to SeDebugPrivilege.
      * @return std::expected<void, std::error_code> Success or error details.
@@ -38,6 +44,6 @@ namespace nt {
      * @brief Retrieves all system handles using NtQuerySystemInformation.
         * @return std::expected<std::vector<RawHandle>, std::error_code> List of handles.
      */
-        std::expected<std::vector<RawHandle>, std::error_code> query_system_handles();
+    std::expected<std::vector<RawHandle>, std::error_code> query_system_handles();
 
 } // namespace nt
