@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include <optional>
-#include <vector>
 #include <cstdint>
 
 // Defines the supported sort keys for output ordering.

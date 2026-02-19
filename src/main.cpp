@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
 
     // Handle parser errors and the explicit help flow.
     if (!result) {
-        if (result.error() == "help") {
+        if (result.error().empty()) {
             cli::print_help();
             return EXIT_SUCCESS;
         }

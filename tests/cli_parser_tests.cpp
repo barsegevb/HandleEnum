@@ -26,7 +26,7 @@ std::expected<CliOptions, std::string> parse_args(std::initializer_list<const ch
     std::vector<char*> argv;
     argv.reserve(owned.size());
     for (std::string& item : owned) {
-        argv.push_back(item.data());
+        argv.push_back(const_cast<char*>(item.c_str()));
     }
 
     return cli::parse(static_cast<int>(argv.size()), argv.data());
@@ -66,7 +66,7 @@ void test_help_flow() {
     auto result = parse_args({"--help"});
     expect_true(!result.has_value(), "help should return unexpected result");
     if (!result) {
-        expect_true(result.error() == "help", "help sentinel should be 'help'");
+        expect_true(result.error().empty(), "help sentinel should be empty string");
     }
 }
 

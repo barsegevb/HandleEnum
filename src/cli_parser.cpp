@@ -24,8 +24,20 @@ std::expected<CliOptions, std::string> parse(int argc, char* argv[]) {
     std::map<std::string_view, Handler> handlers = {
         {"-p", [&](size_t& i) -> std::expected<void, std::string> {
             if (++i >= args.size()) return std::unexpected("Missing value for -p");
-            try { options.pid = std::stoul(std::string(args[i])); return {}; }
-            catch (...) { return std::unexpected(std::format("Invalid PID: {}", args[i])); }
+            try { 
+                unsigned long parsed = std::stoul(std::string(args[i]));
+                if (parsed > UINT32_MAX) {
+                    return std::unexpected(std::format("PID value too large: {}", args[i]));
+                }
+                options.pid = static_cast<uint32_t>(parsed);
+                return {};
+            }
+            catch (const std::invalid_argument&) { 
+                return std::unexpected(std::format("Invalid PID (not a number): {}", args[i]));
+            }
+            catch (const std::out_of_range&) { 
+                return std::unexpected(std::format("PID value out of range: {}", args[i]));
+            }
         }},
 
         {"-n", [&](size_t& i) -> std::expected<void, std::string> {
@@ -56,17 +68,17 @@ std::expected<CliOptions, std::string> parse(int argc, char* argv[]) {
 
         {"-v", [&](size_t&) -> std::expected<void, std::string> { options.verbose = true; return {}; }},
 
-        {"-h", [&](size_t&) -> std::expected<void, std::string> { return std::unexpected("help"); }}
+        {"-h", [&](size_t&) -> std::expected<void, std::string> { return std::unexpected(std::string{}); }}
     };
 
-    handlers["--pid"] = handlers.at("-p");
-    handlers["--name"] = handlers.at("-n");
-    handlers["--type"] = handlers.at("-t");
-    handlers["--object"] = handlers.at("-o");
-    handlers["--sort"] = handlers.at("-s");
-    handlers["--count"] = handlers.at("-c");
-    handlers["--verbose"] = handlers.at("-v");
-    handlers["--help"] = handlers.at("-h");
+    handlers["--pid"] = handlers["-p"];
+    handlers["--name"] = handlers["-n"];
+    handlers["--type"] = handlers["-t"];
+    handlers["--object"] = handlers["-o"];
+    handlers["--sort"] = handlers["-s"];
+    handlers["--count"] = handlers["-c"];
+    handlers["--verbose"] = handlers["-v"];
+    handlers["--help"] = handlers["-h"];
 
     // Main parsing loop
     for (size_t i = 0; i < args.size(); ++i) {
@@ -91,7 +103,8 @@ void print_help() {
               << "  -s, --sort <Field>       Sort by: pid, type, name (default: pid)\n"
               << "  -c, --count              Show only count statistics\n"
               << "  -v, --verbose            Show detailed info\n"
-              << "  -h, --help               Display help message\n";
+              << "  -h, --help               Display help message\n"
+              << std::endl;
 }
 
 } // namespace cli

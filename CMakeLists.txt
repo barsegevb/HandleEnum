@@ -21,7 +21,9 @@ target_include_directories(HandleEnum PRIVATE include)
 target_include_directories(cli_parser_tests PRIVATE include)
 
 # Windows libs (MinGW)
-target_link_libraries(HandleEnum PRIVATE advapi32)
+if (WIN32)
+  target_link_libraries(HandleEnum PRIVATE advapi32)
+endif()
 
 # Warnings
 if (MINGW)
