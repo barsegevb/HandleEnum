@@ -150,6 +150,12 @@ int HandleEnumApp::run(int argc, char* argv[]) {
         }
     }
 
+    if (options.showCountOnly) {
+        const HandlePrinter printer;
+        printer.print_count_only(options, total_raw_count, filtered_handles.size());
+        return EXIT_SUCCESS;
+    }
+
     std::vector<HandleInfo> mapped_handles;
     mapped_handles.reserve(filtered_handles.size());
 
