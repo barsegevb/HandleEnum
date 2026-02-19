@@ -15,6 +15,14 @@ void HandleEnumApp::build_filters(const Parser& parsed_args) {
     if (parsed_args.pid.has_value()) {
         m_filters.push_back(std::make_unique<PidFilter>(*parsed_args.pid));
     }
+
+    if (parsed_args.handleType.has_value()) {
+        m_filters.push_back(std::make_unique<TypeFilter>(*parsed_args.handleType));
+    }
+
+    if (parsed_args.objectName.has_value()) {
+        m_filters.push_back(std::make_unique<NameFilter>(*parsed_args.objectName));
+    }
 }
 
 int HandleEnumApp::run(int argc, char* argv[]) {
