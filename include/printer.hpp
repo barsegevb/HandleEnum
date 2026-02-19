@@ -13,4 +13,6 @@ public:
     void print_results(const std::vector<HandleInfo>& handles,
                        const CliOptions& options,
                        std::size_t total_raw_count) const;
+    void print_header() const;
+    void print_row(const HandleInfo& handle) const;
 };

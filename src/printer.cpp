@@ -31,14 +31,28 @@ void HandlePrinter::print_results(const std::vector<HandleInfo>& handles,
 
     std::cout << std::format("Retrieved {} system handles.\n", total_raw_count);
 
-    std::cout << std::format("{:<8} {:<15} {:<24} {}\n", "PID", "Process", "Type", "Name");
+    std::cout << std::format("{:<8} {:<15} {:<10} {:<24} {}\n", "PID", "Process", "Handle", "Type", "Name");
     for (const HandleInfo& handle : handles) {
-        std::cout << std::format("{:<8} {:<15} {:<24} {}\n",
+        std::cout << std::format("{:<8} {:<15} 0x{:<8X} {:<24} {}\n",
                                  handle.pid,
                                  handle.processName,
+                                 handle.handleValue,
                                  handle.handleType,
                                  handle.objectName);
     }
 
     std::cout << std::format("Matching handles: {}\n", handles.size());
+}
+
+void HandlePrinter::print_header() const {
+    std::cout << std::format("{:<8} {:<15} {:<10} {:<24} {}\n", "PID", "Process", "Handle", "Type", "Name");
+}
+
+void HandlePrinter::print_row(const HandleInfo& handle) const {
+    std::cout << std::format("{:<8} {:<15} 0x{:<8X} {:<24} {}\n",
+                             handle.pid,
+                             handle.processName,
+                             handle.handleValue,
+                             handle.handleType,
+                             handle.objectName);
 }

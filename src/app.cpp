@@ -34,13 +34,34 @@ HandleInfo HandleEnumApp::map_to_info(const nt::RawHandle& raw_handle) {
     const std::string& process_name = get_cached_process_name(pid);
 
     const auto type_result = nt::query_object_type(raw_handle);
-    const auto name_result = nt::query_object_name(raw_handle);
+    const std::string handle_type = type_result ? *type_result : "N/A";
+    
+    std::string object_name;
+    
+    // Refined Anti-deadlock bypass: skip name queries ONLY for risky pipes/sockets
+    bool is_risky_pipe = false;
+    
+    if (handle_type == "File") {
+        if (raw_handle.grantedAccess == 0x0012019F || 
+            raw_handle.grantedAccess == 0x001A019F ||
+            raw_handle.grantedAccess == 0x00120189 ||
+            raw_handle.grantedAccess == 0x00100000) {
+            is_risky_pipe = true;
+        }
+    }
+    
+    if (is_risky_pipe) {
+        object_name = "Locked (Anti-Deadlock)";
+    } else {
+        const auto name_result = nt::query_object_name(raw_handle);
+        object_name = name_result ? *name_result : "N/A";
+    }
 
     return HandleInfo{
         .pid = pid,
         .processName = process_name,
-        .handleType = type_result ? *type_result : "N/A",
-        .objectName = name_result ? *name_result : "N/A",
+        .handleType = handle_type,
+        .objectName = object_name,
         .grantedAccess = raw_handle.grantedAccess,
         .objectAddress = raw_handle.objectAddress,
         .handleValue = raw_handle.handleValue,
@@ -156,9 +177,6 @@ int HandleEnumApp::run(int argc, char* argv[]) {
         return EXIT_SUCCESS;
     }
 
-    std::vector<HandleInfo> mapped_handles;
-    mapped_handles.reserve(filtered_handles.size());
-
     m_process_name_cache.clear();
     m_process_name_cache.reserve(filtered_handles.size());
 
@@ -176,14 +194,39 @@ int HandleEnumApp::run(int argc, char* argv[]) {
         m_process_name_cache.emplace(pid, nt::get_process_name_by_pid(pid));
     }
 
-    for (const nt::RawHandle& raw_handle : filtered_handles) {
-        mapped_handles.push_back(map_to_info(raw_handle));
-    }
-
-    sort_handles(mapped_handles, options.sortBy);
-
     const HandlePrinter printer;
-    printer.print_results(mapped_handles, options, total_raw_count);
+
+    if (options.sortBy == SortField::Pid) {
+        // Streaming mode: print handles as they're processed
+        if (options.verbose) {
+            std::cout << "Verbose mode is ON\n";
+        }
+        if (options.pid) {
+            std::cout << std::format("Filtering by PID: {}\n", *options.pid);
+        }
+        std::cout << std::format("Retrieved {} system handles.\n", total_raw_count);
+        printer.print_header();
+
+        std::size_t matching_count = 0;
+        for (const nt::RawHandle& raw_handle : filtered_handles) {
+            HandleInfo handle_info = map_to_info(raw_handle);
+            printer.print_row(handle_info);
+            ++matching_count;
+        }
+
+        std::cout << std::format("Matching handles: {}\n", matching_count);
+    } else {
+        // Batch mode: collect all, sort, then print
+        std::vector<HandleInfo> mapped_handles;
+        mapped_handles.reserve(filtered_handles.size());
+
+        for (const nt::RawHandle& raw_handle : filtered_handles) {
+            mapped_handles.push_back(map_to_info(raw_handle));
+        }
+
+        sort_handles(mapped_handles, options.sortBy);
+        printer.print_results(mapped_handles, options, total_raw_count);
+    }
 
     return EXIT_SUCCESS;
 }
