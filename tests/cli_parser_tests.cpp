@@ -80,6 +80,59 @@ void test_unknown_argument() {
     expect_true(!result.has_value(), "unknown argument should fail");
 }
 
+void test_duplicate_flags() {
+    // Test duplicate PID flags - last one should win
+    auto result = parse_args({"-p", "123", "-p", "456"});
+    expect_true(result.has_value(), "duplicate flags should parse successfully");
+    if (result) {
+        expect_true(result->pid.has_value() && *result->pid == 456u, "last PID value should be used");
+    }
+}
+
+void test_pid_overflow() {
+    // Test PID value larger than UINT32_MAX (4294967295)
+    auto result = parse_args({"-p", "4294967296"});
+    expect_true(!result.has_value(), "PID larger than UINT32_MAX should fail");
+}
+
+void test_missing_value_at_end() {
+    // Test flag at end without value
+    auto result = parse_args({"-p"});
+    expect_true(!result.has_value(), "flag without value should fail");
+    
+    auto result2 = parse_args({"-n"});
+    expect_true(!result2.has_value(), "flag without value should fail");
+}
+
+void test_multiple_flags_combinations() {
+    // Test combining multiple different flags
+    auto result = parse_args({"-p", "100", "-v", "-c", "-s", "name"});
+    expect_true(result.has_value(), "multiple flag combinations should parse");
+    if (result) {
+        expect_true(result->pid.has_value() && *result->pid == 100u, "PID should be parsed");
+        expect_true(result->verbose, "verbose should be set");
+        expect_true(result->showCountOnly, "count flag should be set");
+        expect_true(result->sortBy == SortField::Name, "sort field should be name");
+    }
+}
+
+void test_mixed_short_long_flags() {
+    // Test mixing short and long flags
+    auto result = parse_args({"--pid", "200", "-v", "--name", "test.exe", "-c"});
+    expect_true(result.has_value(), "mixed short/long flags should parse");
+    if (result) {
+        expect_true(result->pid.has_value() && *result->pid == 200u, "PID from long flag");
+        expect_true(result->verbose, "verbose from short flag");
+        expect_true(result->processName.has_value() && *result->processName == "test.exe", "name from long flag");
+        expect_true(result->showCountOnly, "count from short flag");
+    }
+}
+
+void test_invalid_sort_field() {
+    auto result = parse_args({"-s", "invalid"});
+    expect_true(!result.has_value(), "invalid sort field should fail");
+}
+
 } // namespace
 
 int main() {
@@ -88,6 +141,12 @@ int main() {
     test_help_flow();
     test_invalid_pid();
     test_unknown_argument();
+    test_duplicate_flags();
+    test_pid_overflow();
+    test_missing_value_at_end();
+    test_multiple_flags_combinations();
+    test_mixed_short_long_flags();
+    test_invalid_sort_field();
 
     if (failures == 0) {
         std::cout << "All cli_parser tests passed.\n";
